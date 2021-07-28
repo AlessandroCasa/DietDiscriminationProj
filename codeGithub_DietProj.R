@@ -6,8 +6,6 @@ require(doMC); require(seriation); require(groupdata2); require(chemometrics)
 
 # some useful functions ####
 cv.folds <- function(n, nfolds = 5) {
-  # Create 'nfolds' groups of approximately the same size. 
-  # Returns a list with 'nfolds' elements containing indexes of each fold.
   n <- as.integer(n)
   nfolds <- as.integer(min(n, nfolds))
   folds <- split(sample(n, size = n, replace = FALSE),
@@ -28,9 +26,6 @@ postproc <- function(pred, true) {
 }
 
 
-
-# MAY-AUGUST ANALYSES ####
-
 # load data #### 
 dati <- readxl::read_xlsx("MIR Pasture vs TMR 2015 - 2017 May June July August only.xlsx")
 
@@ -38,27 +33,19 @@ dati <- readxl::read_xlsx("MIR Pasture vs TMR 2015 - 2017 May June July August o
 # build dataset ####
 spectra <- as.matrix(dati[,21:dim(dati)[2]],ncol=1060)
 
-# work in log10 scale, everything afterwards being done with this scale
+# work in log10 scale
 spectra <- t(apply(spectra,1,function(x) log10(1/x)))
 
 # outlier detection 
 
-# check visually if something wrong is going on 
-plot(1:1060, spectra[1,], type = "n", ylim = c(min(spectra), max(spectra)))
-for (i in 1:1060) lines(spectra[i,], lwd = 0.7, lty = 2)
-
 pca <- princomp(spectra)
 perc_var <- cumsum(pca$sdev^2/sum(pca$sdev^2))
-# 8 principal components to explain the 90% of the variance 
 pc_scores <- pca$scores[,1:8]
 detect <- Moutlier(pc_scores, quantile = 0.99, plot = F)
 sub_out <- which(detect$md >= detect$cutoff)
 
 # remove outlier
 spectra_red <- spectra[-sub_out,]
-# check visually --> ok
-plot(1:1060, spectra_red[1,], type = "n", ylim = c(min(spectra_red), max(spectra_red)))
-for (i in 1:1060) lines(spectra_red[i,], lwd = 0.7, lty = 2)
 
 # build variable to predict
 diet <- dati$`Feed type`
@@ -70,7 +57,6 @@ cowid <- cowid[-sub_out]
 # remove water wavelengths 
 water_wave <- c(174:207,538:720,751:1060)
 spectra <- spectra_red[,-water_wave]
-
 
 
 # Split in training and validation set ####
